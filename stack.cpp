@@ -10,10 +10,13 @@ const int S_EMPTY_TOKEN = 0xFFFFFFFF;
 
 
 Stack_Int::Stack_Int() : _m_p_stackArray( nullptr ), 
-                            _m_topPos( static_cast< size_t >( -1 ) ), 
-                            _m_size( static_cast< size_t >( -1 ) )
+                            _m_topPos( 0 ), 
+                            _m_size( 1 )
 {
-    // nothing to do
+    // temp - would rather not call new here
+    int *newStack = nullptr;
+    _alloc_stack( &newStack, _m_size );
+    _m_p_stackArray = newStack;
 }
 
 Stack_Int::Stack_Int( const Stack_Int &other )
@@ -82,18 +85,26 @@ int Stack_Int::top()
 // Exception safety - Provides the same level of guarantees as the operation performed on the underlying container object.
 void Stack_Int::push( int value )
 {
-    // If _m_size <= _m_topPos, grow the stack. 
+    assert( 0 == _m_size, &&
+            "Stack_Int::push( int ) called with a stack size of 0." );
+ 
+    // If _m_size <= _m_topPos, grow the stack
     if ( _m_size <= _m_topPos )
     {
         int *newStack = nullptr;
         int newSize = _m_size * 2;
 
         _alloc_stack( &newStack, newSize );
+        std::memcpy( newStack, _m_p_stackArray, _m_size );
+        //std::memmove( newStack, _m_p_stackArray, _m_size );
 
+        _free_stack( &_m_p_stackArray );
+
+        _m_p_stackArray = newStack;
         _m_size = newSize;
     }
 
-    // Set the stack at _m_topPos position equal to the given value .
+    // Set the stack at _m_topPos position equal to the given value
     _m_p_stackArray[_m_topPos] = value;
 
     // advance top pointer
@@ -133,6 +144,7 @@ int Stack_Int::pop()
 // Exception safety - Provides the same level of guarantees as the operation performed on the underlying container objects.
 void Stack_Int::swap()
 {
+    
 }
 
 
@@ -143,7 +155,7 @@ void Stack_Int::_alloc_stack( int **stack_chunk, size_t size )
 
     assert( !*stack_chunk &&
                 "Stack_Int::_alloc_stack( int **, size_t ) was given a pointer to already allocated memory." );
-    
+
     // TODO: What if new fails?
     *stack_chunk = new int[size];
 
@@ -157,6 +169,9 @@ void Stack_Int::_free_stack( int **stack_chunk )
 {
     assert( stack_chunk && 
             "Stack_Int::_alloc_stack( int **, size_t ) was given nullptr as an argument." );
+
+    assert( *stack_chunk && 
+            "Stack_Int::_alloc_stack( int **, size_t ) was given unallocated memory as an argument." );
 
     if ( *stack_chunk )
     {
